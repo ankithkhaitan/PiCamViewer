@@ -3,13 +3,13 @@ import socket
 import struct
 import pickle
 import imutils
-import threading
 import tkinter as tk
+from tkinter import simpledialog
+
 
 def get_ip_port():
     IP = '127.0.0.1'
     PORT = '8485'
-
     def submit():
         nonlocal IP, PORT
         IP = ip_entry.get()
@@ -33,55 +33,35 @@ def get_ip_port():
     submit_button.grid(row=2, column=0, columnspan=2, pady=10)
 
     root.mainloop()
-    return IP, int(PORT)
+    return IP, PORT
+
+IP,PORT = get_ip_port()
 
 
-IP, PORT_VIDEO = get_ip_port()
-PORT_CHAT = 8486
-
-client_video_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_video_socket.connect((IP, PORT_VIDEO))  
-
-client_chat_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_chat_socket.connect((IP, PORT_CHAT))
-
-def handle_chat():
-    while True:
-        try:
-            message = client_chat_socket.recv(1024).decode()
-            if message:
-                print(f"Server: {message}")
-        except:
-            print("Chat connection closed.")
-            break
-
-chat_thread = threading.Thread(target=handle_chat)
-chat_thread.start()
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect(('127.0.0.1', 8485))
 
 cam = cv2.VideoCapture(0)
 img_counter = 0
 
-encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+encode_param=[int(cv2.IMWRITE_JPEG_QUALITY),90]
 
 while True:
     ret, frame = cam.read()
     frame = imutils.resize(frame, width=320)
-    frame = cv2.flip(frame, 180)
+    frame = cv2.flip(frame,180)
     result, image = cv2.imencode('.jpg', frame, encode_param)
     data = pickle.dumps(image, 0)
     size = len(data)
 
-    if img_counter % 10 == 0:
-        client_video_socket.sendall(struct.pack(">L", size) + data)
-        cv2.imshow('client', frame)
-
+    if img_counter%1==0:
+        client_socket.sendall(struct.pack(">L", size) + data)
+        cv2.imshow('client',frame)
+        
     img_counter += 1
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
-    if img_counter % 50 == 0:
-        message = input("You: ")
-        client_chat_socket.sendall(message.encode())
+    
 
 cam.release()
