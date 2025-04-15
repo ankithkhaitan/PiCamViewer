@@ -38,32 +38,45 @@ def get_ip_port():
 IP,PORT = get_ip_port()
 
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((IP, int(PORT)))
+try:
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((IP, int(PORT)))
+    print(f"Connected to server at {IP}:{PORT}")
+except Exception as e:
+    print(f"Failed to connect to server: {e}")
+    exit(1)
 
-picam2 = Picamera2()
-config = picam2.create_preview_configuration(main={"format": 'BGR888', "size": (320, 240)})
-picam2.configure(config)
-picam2.start()
+try:
+    picam2 = Picamera2()
+    config = picam2.create_preview_configuration(main={"format": 'BGR888', "size": (320, 240)})
+    picam2.configure(config)
+    picam2.start()
 
-encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-img_counter = 0
+    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+    img_counter = 0
 
-while True:
-    frame = picam2.capture_array()
-    frame = cv2.flip(frame, 0)  # Flip vertically to match the original behavior
-    result, image = cv2.imencode('.jpg', frame, encode_param)
-    data = pickle.dumps(image, 0)
-    size = len(data)
+    while True:
+        frame = picam2.capture_array()
+        frame = cv2.flip(frame, 0)  # Flip vertically to match the original behavior
+        result, image = cv2.imencode('.jpg', frame, encode_param)
+        data = pickle.dumps(image, 0)
+        size = len(data)
 
-    if img_counter % 1 == 0:
-        client_socket.sendall(struct.pack(">L", size) + data)
-        cv2.imshow('client', frame)
+        try:
+            client_socket.sendall(struct.pack(">L", size) + data)
+            cv2.imshow('client', frame)
+        except Exception as e:
+            print(f"Error sending data: {e}")
+            break
 
-    img_counter += 1
+        img_counter += 1
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-cv2.destroyAllWindows()
-picam2.stop()
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+except Exception as e:
+    print(f"Error during camera operation: {e}")
+finally:
+    cv2.destroyAllWindows()
+    picam2.stop()
+    client_socket.close()
+    print("Resources released and socket closed.")
