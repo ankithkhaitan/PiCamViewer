@@ -8,7 +8,7 @@ from tkinter import simpledialog
 
 
 def get_ip_port():
-    IP = '127.0.0.1'
+    IP = '100.94.21.11'
     PORT = '8485'
     def submit():
         nonlocal IP, PORT
@@ -21,7 +21,7 @@ def get_ip_port():
 
     tk.Label(root, text="IP Address:").grid(row=0, column=0, padx=10, pady=5)
     ip_entry = tk.Entry(root)
-    ip_entry.insert(0, "127.0.0.1")
+    ip_entry.insert(0, "100.94.21.11")
     ip_entry.grid(row=0, column=1, padx=10, pady=5)
 
     tk.Label(root, text="Port:").grid(row=1, column=0, padx=10, pady=5)
