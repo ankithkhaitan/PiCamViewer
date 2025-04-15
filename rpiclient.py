@@ -82,3 +82,10 @@ try:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             print("Checkpoint: 'q' key pressed, exiting loop")
             break
+except Exception as e:
+    print(f"Error during camera operation: {e}")
+finally:
+    cv2.destroyAllWindows()
+    picam2.stop()
+    client_socket.close()
+    print("Resources released and socket closed.")
