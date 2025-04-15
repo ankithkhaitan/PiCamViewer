@@ -1,16 +1,15 @@
+from picamera2 import Picamera2
 import cv2
 
-cam = cv2.VideoCapture(0)  # Use 0 for the default camera
+picam2 = Picamera2()
+picam2.configure(picam2.preview_configuration(main={"format": 'BGR888', "size": (640, 480)}))
+picam2.start()
 
-if not cam.isOpened():
-    print("Cannot open camera")
-    exit()
+while True:
+    frame = picam2.capture_array()
+    cv2.imshow("Pi Camera", frame)
 
-ret, frame = cam.read()
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-if not ret:
-    print("Failed to grab frame")
-else:
-    print("Frame captured successfully")
-
-cam.release()
+cv2.destroyAllWindows()
