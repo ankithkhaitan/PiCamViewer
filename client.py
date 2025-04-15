@@ -39,7 +39,7 @@ IP,PORT = get_ip_port()
 
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((IP, PORT))
+client_socket.connect((IP, int(PORT)))
 
 cam = cv2.VideoCapture(0)
 img_counter = 0
