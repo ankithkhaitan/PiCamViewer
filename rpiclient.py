@@ -4,6 +4,7 @@ import struct
 import pickle
 import imutils
 import tkinter as tk
+from picamera2 import Picamera2
 
 
 def get_ip_port():
@@ -40,27 +41,29 @@ IP,PORT = get_ip_port()
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((IP, int(PORT)))
 
-cam = cv2.VideoCapture(0)
+picam2 = Picamera2()
+config = picam2.create_preview_configuration(main={"format": 'BGR888', "size": (320, 240)})
+picam2.configure(config)
+picam2.start()
+
+encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
 img_counter = 0
 
-encode_param=[int(cv2.IMWRITE_JPEG_QUALITY),90]
-
 while True:
-    ret, frame = cam.read()
-    frame = imutils.resize(frame, width=320)
-    frame = cv2.flip(frame,180)
+    frame = picam2.capture_array()
+    frame = cv2.flip(frame, 0)  # Flip vertically to match the original behavior
     result, image = cv2.imencode('.jpg', frame, encode_param)
     data = pickle.dumps(image, 0)
     size = len(data)
 
-    if img_counter%1==0:
+    if img_counter % 1 == 0:
         client_socket.sendall(struct.pack(">L", size) + data)
-        cv2.imshow('client',frame)
-        
+        cv2.imshow('client', frame)
+
     img_counter += 1
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    
 
-cam.release()
+cv2.destroyAllWindows()
+picam2.stop()
