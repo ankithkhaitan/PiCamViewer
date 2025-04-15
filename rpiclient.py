@@ -70,8 +70,6 @@ try:
 
             client_socket.sendall(struct.pack(">L", size) + data)
             print("Checkpoint: Data sent to server")
-            cv2.imshow('client', frame)
-            print("Checkpoint: Frame displayed")
         except Exception as e:
             print(f"Error sending data: {e}")
             break
