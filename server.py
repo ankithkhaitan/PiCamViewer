@@ -23,6 +23,10 @@ print("payload_size: {}".format(payload_size))
 
 fgbg = cv2.createBackgroundSubtractorMOG2()
 
+# Load Haar cascades for face and smile detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+smile_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_smile.xml')
+
 while True:
     while len(data) < payload_size:
         data += conn.recv(4096)
@@ -44,10 +48,21 @@ while True:
 
     contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
-        if cv2.contourArea(contour) > 1000:  #           increase or decrease this to calibrate the motion sneing
+        if cv2.contourArea(contour) > 15000:
             x, y, w, h = cv2.boundingRect(contour)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             print(f"[{time.ctime(time.time())}] Motion detected!")
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    for (x, y, w, h) in faces:
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        roi_gray = gray[y:y + h, x:x + w]
+        roi_color = frame[y:y + h, x:x + w]
+        smiles = smile_cascade.detectMultiScale(roi_gray, scaleFactor=1.2, minNeighbors=10)
+        for (sx, sy, sw, sh) in smiles:
+            cv2.rectangle(roi_color, (sx, sy), (sx + sw, sy + sh), (0, 255, 255), 2)
+            print(f"[{time.ctime(time.time())}] --------------------- Smile detected!")
 
     cv2.imshow('server', frame)
     cv2.waitKey(1)
