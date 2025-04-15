@@ -54,29 +54,31 @@ try:
 
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
     img_counter = 0
-
     while True:
-        frame = picam2.capture_array()
-        frame = cv2.flip(frame, 0)  # Flip vertically to match the original behavior
-        result, image = cv2.imencode('.jpg', frame, encode_param)
-        data = pickle.dumps(image, 0)
-        size = len(data)
-
+        print(f"Checkpoint: Starting loop iteration {img_counter}")
         try:
+            frame = picam2.capture_array()
+            print("Checkpoint: Frame captured")
+            frame = cv2.flip(frame, 0)  # Flip vertically to match the original behavior
+            print("Checkpoint: Frame flipped")
+            result, image = cv2.imencode('.jpg', frame, encode_param)
+            print("Checkpoint: Frame encoded")
+            data = pickle.dumps(image, 0)
+            print("Checkpoint: Frame serialized")
+            size = len(data)
+            print(f"Checkpoint: Data size calculated - {size} bytes")
+
             client_socket.sendall(struct.pack(">L", size) + data)
+            print("Checkpoint: Data sent to server")
             cv2.imshow('client', frame)
+            print("Checkpoint: Frame displayed")
         except Exception as e:
             print(f"Error sending data: {e}")
             break
 
         img_counter += 1
+        print(f"Checkpoint: Incremented img_counter to {img_counter}")
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            print("Checkpoint: 'q' key pressed, exiting loop")
             break
-except Exception as e:
-    print(f"Error during camera operation: {e}")
-finally:
-    cv2.destroyAllWindows()
-    picam2.stop()
-    client_socket.close()
-    print("Resources released and socket closed.")
