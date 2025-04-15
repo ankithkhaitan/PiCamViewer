@@ -2,29 +2,33 @@ import socket
 import cv2
 import pickle
 import struct
+import time
 
-HOST='0.0.0.0'
-PORT=8485
+HOST = '0.0.0.0'
+PORT = 8485
 
-s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print('Socket created')
 
-s.bind((HOST,PORT))
+s.bind((HOST, PORT))
 print('Socket bind complete')
 s.listen(10)
 print('Socket now listening')
 
-conn,addr=s.accept()
+conn, addr = s.accept()
 
 data = b""
 payload_size = struct.calcsize(">L")
 print("payload_size: {}".format(payload_size))
+
+fgbg = cv2.createBackgroundSubtractorMOG2()
+
 while True:
     while len(data) < payload_size:
         data += conn.recv(4096)
         if not data:
             cv2.destroyAllWindows()
-            conn,addr=s.accept()
+            conn, addr = s.accept()
             continue
     packed_msg_size = data[:payload_size]
     data = data[payload_size:]
@@ -33,8 +37,17 @@ while True:
         data += conn.recv(4096)
     frame_data = data[:msg_size]
     data = data[msg_size:]
-    frame=pickle.loads(frame_data, fix_imports=True, encoding="bytes")
+    frame = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
     frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
-    cv2.imshow('server',frame)
+    fgmask = fgbg.apply(frame)
+
+    contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for contour in contours:
+        if cv2.contourArea(contour) > 1000:  #           increase or decrease this to calibrate the motion sneing
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            print(f"[{time.ctime(time.time())}] Motion detected!")
+
+    cv2.imshow('server', frame)
     cv2.waitKey(1)
